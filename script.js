@@ -1,59 +1,45 @@
-const gdmOptions = {
-  video: {
-  },
-  audio: {
-    echoCancellation: true,
-    noiseSuppression: true,
-    sampleRate: 16000,
-    channelCount: 1
-  }
-}
-
-let videoElem = document.getElementById("streamvideo")
-
-
-
-let titleElem = document.getElementsByTagName("title")[0]
-
-/*navigator.mediaDevices.getDisplayMedia(gdmOptions)
-
-.then(stream => {
-  videoElem.srcObject = stream
-})
-    
-.catch (err => {
-    return
-})*/
-
-//document.getElementsByTagName("video")[0].srcObject.getTracks()[0].applyConstraints({width:40, height: 27})
-
 let role
 let call
-let conn
+let peerConn
 let peerID
 let initialConstraints = null
 
+let logo = document.getElementById("logo")
+let videoElem = document.getElementById("streamvideo")
+let titleElem = document.getElementsByTagName("title")[0]
+
 let startButton = document.getElementById("startButton")
 let nothingPlaying = document.getElementById("nothingPlaying")
+let idSection = document.getElementById("idSection")
 let idBox = document.getElementById("idBox")
+let idLabel = document.getElementById("idLabel")
 let asideHeading = document.getElementById("asideHeading")
+let settingsSection = document.getElementById("settingsSection")
+let roleSection = document.getElementById("roleSection")
+let chatSection = document.getElementById("chatSection")
+let chatBox = document.getElementById("chatBox")
+let chatContents = document.getElementById("chatContents")
 
 function onShareButton() {
   role = "Host"
   let me = new Peer()
   console.log('hosting')
   SetTitle("Host - Connecting...")
-  document.getElementById("roleSelection").style.display = "none"
-  document.getElementById("idSection").style.display = "block"
-  document.getElementById("idLabel").innerText = "Your IDentificator is:"
+  idBox.readonly = true
+  roleSection.style.display = "none"
+  idSection.style.display = "block"
+  idLabel.innerText = "Your IDentificator is:"
+  startButton.innerText = "Select Source"
+  logo.style.display = "none"
   me.on("open", function(id) {
     SetTitle("Host - Waiting for Client...")
     idBox.value = me.id
-    idBox.readonly = true
   })
 
   me.on('connection', function(conn) {
+    peerConn = conn
     peerID = conn.peer
+    chatSection.style.display = "flex"
     console.log("connected!")
     SetTitle("Host - Connected")
     console.log("calling " + conn.peer)
@@ -69,29 +55,30 @@ function onShareButton() {
             break
         }
       } else if (data.charAt(0) == "$") {
-        
+        addMessage(data.substring(2), false)
       }
     });
     conn.on('error', function(error) {
-      console.error("ERROR:" + error)
+      console.error(error)
     });
+
+    conn.on('close', function () {
+      SetTitle("Host - Disconnected")
+    })
   });
 
   me.on('error', function(error) {
-    console.error("ERROR:" + error)
+    console.error(error)
   });
 
   startButton.onclick = function() {
     navigator.mediaDevices.getDisplayMedia()
 
     .then(stream => {
-      
+      settingsSection.style.display = "block"
       if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}
       
       videoElem.srcObject = stream
-      console.log("waht's going on?")
-      //initialConstraints = videoElem.srcObject.getVideoTracks().getConstraints()
-      
       startButton.innerText = "Change Source"
       nothingPlaying.style.display = "none"
       if (peerID == undefined) return
@@ -111,21 +98,28 @@ function onShareButton() {
   }
 }
 
+stopAllTracks = () => {if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}}
+
 function onReceiveButton() {
   role = "Client"
   let me = new Peer()
   console.log("joining")
-  SetTitle("Client - Connecting...")
+  SetTitle("Client - Enter Host ID")
 
   me.on('error', function(error) {
-    console.error("ERROR:" + error)
+    console.error(error)
   });
   startButton.onclick = function() {
     if (idBox.value == "") return
-    conn = me.connect(idBox.value, {reliable: true})
+    SetTitle("Client - Connecting...")
+    let conn = me.connect(idBox.value, {reliable: true})
+    peerConn = conn
     conn.on('open', function() {
       console.log("connected!")
       SetTitle("Client - Connected")
+      logo.style.display = "none"
+      chatSection.style.display = "flex"
+      startButton.style.display = "none"
     })
     conn.on('data', function(data) {
       if (data.charAt(0) == "!") {
@@ -134,24 +128,31 @@ function onReceiveButton() {
             qualitySlider.value = parseFloat(data.substring(3)) / 100
             qualityValue.innerText = Math.round(qualitySlider.value*100) + "%"
             break
+        }
+      } else if (data.charAt(0) == "$") {
+        addMessage(data.substring(2), false)
       }
-      };
     })
     conn.on('error', function(error) {
-      console.log("ERROR:" + error)
+      console.log(error)
     });
+
+    conn.on('close', function() {
+      SetTitle("Client - Disconnected")
+    })
   }
     me.on('call', function(call) {
       console.log('Getting a stream call...')
       call.answer();
       call.on('stream', function(stream) {
+        settingsSection.style.display = "block"
         videoElem.srcObject = stream
         nothingPlaying.style.display = "none"
       });
     });
-  document.getElementById("roleSelection").style.display = "none"
-  document.getElementById("idSection").style.display = "block"
-  document.getElementById("idLabel").innerText = "Your Host's IDentificator is:"
+  roleSection.style.display = "none"
+  idSection.style.display = "block"
+  idLabel.innerText = "Your Host's IDentificator is:"
 }
 
 function SetTitle(text) {
@@ -169,7 +170,6 @@ function changeQuality(value) {
   newConstraints.height = newConstraints.width * (1/initialConstraints.aspectRatio)
   videoElem.srcObject.getVideoTracks()[0].applyConstraints(newConstraints)
 }
-
 let qualitySlider = document.getElementById("qualitySlider")
 let qualityValue = document.getElementById("qualityValue")
 
@@ -183,5 +183,24 @@ qualitySlider.onchange = function() {
   } else {
     
   }
-  conn.send("!Q:" + Math.round(qualitySlider.value*100))
+  peerConn.send("!Q:" + Math.round(qualitySlider.value*100))
 }
+
+chatBox.onkeypress = function(e) {
+  if (e.key == "Enter" && !e.shiftKey) {
+    peerConn.send("$:" + chatBox.innerText)
+    addMessage(chatBox.innerText, true)
+    chatBox.innerText = ""
+    e.preventDefault()
+  } 
+}
+
+function addMessage(text, self) {
+  let textElem = document.createElement("p")
+  let textSpan = document.createElement("span")
+  textElem.className = self ? "self" : "peer"
+  textSpan.innerText = text
+  textElem.append(textSpan)
+  chatContents.append(textElem)
+}
+
