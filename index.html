@@ -1,0 +1,150 @@
+<head>
+  <title>
+    SlideShare Screen Sharing
+  </title>
+</head>
+<main>
+  <div id="videoContainer">
+    <video id="streamvideo" autoplay></video>
+    <p id="nothingPlaying"><span class="bigText">🥱</span><br>Nothing is playing right now.</p>
+  </div>
+  <aside>
+    <!--<div id="sideTopBar"><button>Chat</button><button>Settings</button></div>
+    <div id="chatContainer">
+    <div id="chatContents"></div>
+    <textarea type="text" id="chatBox"></textarea>
+    <div id="settingsContainer">
+      <h2>Settings</h2>
+      <hr>
+    </div>-->
+    <div id="welcomeContainer">
+      <h2 id="asideHeading">Welcome!</h2>
+      <div id="roleSelection"><button onclick="onShareButton()">Share</button>
+      <button onclick="onReceiveButton()">Receive</button></div>
+      <section id="idSection" style="display: none;"><label id="idLabel">Your Host's IDentificator is:</label>
+      <div style="display:flex; justify-content: center; align-items: center;">
+        
+        <input type="text" id="idBox" style="flex-grow:1"></input><button style="width:initial; display:none;">✀</button><br><br>
+      </div><br>
+      <div style="text-align: center;"><button id="startButton">Start</button>
+      </div>
+      </section>
+      <section id="settingsSection">
+        <h3>Stream Settings</h3>
+        <label>Quality:</label> <var id="qualityValue">100%</var></var><br><input id="qualitySlider" type="range" value="1" min="0.05" max="1" step="0.05">
+      </section>
+    </div>
+  </aside>
+</main>
+
+
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<script src="script.js"></script>
+
+<style>
+  html, body { margin: 0; padding: 0; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; width: 100vw;}
+  video { height:100vh; max-width:80vw; background: black;}
+
+  h2,h3 { border-bottom: 1px solid black; }
+
+  header {
+    text-align:center;
+    background:white;
+    border-radius: 2px;
+    box-shadow: 1px 1px 5px #aaa;
+    padding: 10px;
+  }
+
+  main {
+    display:flex;
+    justify-content: left;
+    width:100vw;
+  }
+
+  aside { min-width: 200px; flex-grow:1;}
+
+  aside button, aside input[type=text] {
+    background:#282;
+    color: white;
+    font-weight: bold;
+    border: 3px solid white;
+    border-radius: 5px;
+    box-shadow: 1px 1px 5px #AAA;
+    margin: 0 5px;
+    padding: 10px 15px;
+    font-size: 18px;
+    width:40%;
+  }
+
+  aside input[type=range] { width: 100%; }
+
+  #roleSelection {
+    text-align: center;
+    display: flex;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  #sideTopBar {
+    height:5vh;
+  }
+
+  #videoContainer { position:relative; text-align: left;}
+
+  span.bigText { font-size:xx-large; }
+
+  #videoContainer p {
+    color:white;
+    font-weight: bold;
+    position:absolute;
+    text-align: center;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%)
+  }
+
+  aside {
+    height: 100vh;
+    flex-grow: 1;
+  }
+
+  aside > button {
+    height: 5vh;
+    background: #282;
+    color:white;
+    border: 1px solid #AAA;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    margin-right: 5px;
+  }
+
+  #chatContainer {
+    height: 95vh;
+    flex-grow: 1;
+    display:flex;
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  #chatContents { flex-grow:1; border-top: 1px solid black;}
+
+  #chatBox {
+    height:10vh;
+    border-top: 1px solid;
+  }
+
+  #settingsContainer, #welcomeContainer { padding: 10px; }
+
+  #welcomeContainer #idbox {
+    font-size: 1.25em;
+  }
+
+  @media (orientation: portrait) {
+    main { flex-direction: column; }
+    video { width: 100vw; height: initial; }
+  }
+</style>
