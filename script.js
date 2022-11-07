@@ -100,7 +100,7 @@ function onShareButton() {
 
 stopAllTracks = () => {if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}}
 
-function onReceiveButton() {
+function onWatchButton() {
   role = "Client"
   let me = new Peer()
   console.log("joining")
@@ -188,11 +188,20 @@ qualitySlider.onchange = function() {
 
 chatBox.onkeypress = function(e) {
   if (e.key == "Enter" && !e.shiftKey) {
-    peerConn.send("$:" + chatBox.innerText)
+    //peerConn.send("$:" + chatBox.innerText)
+    broadcast.postMessage("$:" + chatBox.innerText)
     addMessage(chatBox.innerText, true)
     chatBox.innerText = ""
     e.preventDefault()
   } 
+}
+
+let isTextToSpeech = false
+let textToSpeechButton = document.getElementById("textToSpeechButton")
+
+textToSpeechButton.onclick = function() {
+  isTextToSpeech = !isTextToSpeech
+  textToSpeechButton.innerText = isTextToSpeech ? "●" : "◌"
 }
 
 function addMessage(text, self) {
@@ -201,6 +210,26 @@ function addMessage(text, self) {
   textElem.className = self ? "self" : "peer"
   textSpan.innerText = text
   textElem.append(textSpan)
-  chatContents.append(textElem)
+  if (chatContents.offsetHeight + chatContents.scrollTop == chatContents.scrollHeight) {
+    chatContents.append(textElem)
+    chatContents.scrollBy(0,9999)
+  } else {
+    chatContents.append(textElem)
+  }
+  if (!self) broadcast.postMessage("$:" + chatBox.innerText)
+  if (!self && isTextToSpeech) speechSynthesis.speak(new SpeechSynthesisUtterance(text)) 
+}
+
+let chatPopOutButton = document.getElementById("chatPopOutButton");
+
+chatPopOutButton.onclick = function() {
+  window.open("chatWindow/chatWindow.html","_blank",
+  `popup location=no width=300 height=9999 scrollbars=no,status=no,location=no,toolbar=no,menubar=no`)
+}
+
+let broadcast = new BroadcastChannel("SlideShareChatr8n3a8t2c")
+
+broadcast.onmessage = function(e) {
+  if (e.data.charAt(0) == "$") addMessage(e.data.substring(2), true)
 }
 

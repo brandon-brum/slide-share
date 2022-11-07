@@ -12,10 +12,10 @@
   </div>
   <aside>
     <div style="text-align: center;"><img id="logo" src="logo.svg"></div>
-      <h2 id="asideHeading">Welcome!</h2>
+      <h2 id="asideHeading">Welcome to SlideShare!</h2>
       <section id="roleSection">
         <button onclick="onShareButton()">Share</button>
-        <button onclick="onReceiveButton()">Receive</button>
+        <button onclick="onWatchButton()">Watch</button>
       </section>
       <section id="idSection" style="display: none;"><label id="idLabel">Your Host's IDentificator is:</label>
         <div style="display:flex; justify-content: center; align-items: center;">
@@ -30,7 +30,7 @@
       <section id="chatSection" style="display:none;">
         <heading>
           <div style="text-align:left;"><h3>Chat</h3></div>
-          <div style="text-align:right;"></div>
+          <div style="text-align:right;"><button id="textToSpeechButton">◌</button><button id="chatPopOutButton">⧉</button></div>
         </heading>
         <div id="chatContents"></div>
         <span id="chatBox" role="textbox" contenteditable></span>

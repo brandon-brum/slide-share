@@ -44,7 +44,7 @@
       margin: 0 5px;
       padding: 10px 15px;
       font-size: 18px;
-      width:40%;
+      min-width:40%;
       transition: transform 0.1s;
     }
 
@@ -64,7 +64,7 @@
     }
 
     #idbox {
-      font-size: 1.25em;
+      font-size: 1em;
     }
   
     textarea {
@@ -81,6 +81,7 @@
       flex-direction: column;
       margin-top: 10px;
       position: relative;
+      min-height: 0;
     }
   
     #chatContents {
@@ -90,19 +91,24 @@
       display:flex; flex-direction: column;
       height:-webkit-fill-available;
       height:-moz-available;
+      overflow-y: scroll;
     }
+
+    #chatContents::-webkit-scrollbar { width: 5px; height: 5px; }
+    #chatContents::-webkit-scrollbar-thumb { background: black; border-radius: 10px; }
+    #chatContents::-webkit-scrollbar-track { background: #AAA; }
 
     #chatContents span {
       background: black;
       color:white;
       padding:8px;
-      margin:2px;
       border-radius: 5px;
       border: 1px solid black;
       display:inline-block;
     }
 
-    #chatContents p { padding: 0; margin: 10px 0; }
+    #chatContents p { padding: 0; margin: 2px 0; }
+    #chatContents span { text-align: left; max-width:75%; overflow-wrap: break-word; }
 
     #chatContents p.self span {
       color:black;
@@ -114,11 +120,11 @@
   
     #chatBox {
       box-shadow: 1px 1px 2px #aaa inset;
-      background:white;
+      background: black;
       border: none;
-      padding: 0;
-      color:black;
-      border-top:1px solid black;
+      padding: 5px;
+      color:white;
+      border:0px solid black;
     }
 
     #roleSection { text-align: center; }
@@ -130,6 +136,8 @@
     heading button { padding:0; background:none; color:black; border:none; box-shadow: none; width: 25px}
   
     @media (orientation: portrait) {
-      main { flex-direction: column; }
-      video { width: 100vw; height: initial; }
+      body,HTML { overflow:hidden; }
+      main { flex-direction: column; height:100vh; }
+      video { width: 100vw; height: initial; max-width:100vw;}
+      #videoContainer { text-align: center; }
     }
