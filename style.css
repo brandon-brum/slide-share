@@ -32,7 +32,7 @@
       margin-right: 5px;
     }
 
-    aside button:hover { transform: scale(1.03); }
+    aside button:not(#chatSection button):hover { transform: scale(1.03); }
 
     button, input[type=text] {
       background:#000;
@@ -83,6 +83,9 @@
       position: relative;
       min-height: 0;
     }
+
+    heading button { height: 30px; width: 30px; min-width: 0; border-radius: 100%;}
+    heading button:not(#microphoneButton):hover { background: black; color:white; }
   
     #chatContents {
       padding: 5px;
@@ -129,11 +132,15 @@
 
     #roleSection { text-align: center; }
 
-    heading { border-bottom: 1px solid black; display: flex; justify-content: space-between; margin-top: 10px; }
+    heading { border-bottom: 1px solid black; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 
-    heading * { margin: 0; flex-grow: 1; border:none; }
+    heading * { margin: 0; border:none; }
 
     heading button { padding:0; background:none; color:black; border:none; box-shadow: none; width: 25px}
+
+    heading:not(#chatSection heading) { margin-bottom: 5px; }
+
+    button img {width:100%;}
   
     @media (orientation: portrait) {
       body,HTML { overflow:hidden; }

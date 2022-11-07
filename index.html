@@ -1,4 +1,6 @@
+<html lang="en">
 <head>
+  <meta charset="utf-8">
   <title>
     SlideShare Screen Sharing
   </title>
@@ -7,12 +9,15 @@
 <body class="loading">
 <main>
   <div id="videoContainer">
-    <video id="streamvideo" autoplay></video>
+    <video id="streamVideo" autoplay></video>
+    <audio id="microphoneAudio" autoplay></audio>
     <p id="nothingPlaying"><span class="bigText">🥱</span><br>Nothing is playing right now.</p>
   </div>
   <aside>
     <div style="text-align: center;"><img id="logo" src="logo.svg"></div>
-      <h2 id="asideHeading">Welcome to SlideShare!</h2>
+      <h2 id="asideHeading">Welcome to SlideShare!<br>
+        <sup style="font-size: 50%; vertical-align: super;">version 0.5</sup></h2>
+      
       <section id="roleSection">
         <button onclick="onShareButton()">Share</button>
         <button onclick="onWatchButton()">Watch</button>
@@ -24,13 +29,17 @@
         <div style="text-align: center;"><button id="startButton">Start</button></div>
       </section>
       <section id="settingsSection" style="display: none;">
-        <h3>Stream Settings</h3>
-        <label>Quality:</label> <var id="qualityValue">100%</var><br><input id="qualitySlider" type="range" value="1" min="0.05" max="1" step="0.05">
+        <heading><h3>Stream Settings</h3><div style="flex-grow:1"></div><button id="microphoneButton"><img src="resources/microphone.png"></button></heading>
+        <label>Video Quality:</label> <var id="videoQualityValue">100%</var><br><input id="videoQualitySlider" type="range" value="1" min="0.05" max="1" step="0.05">
+        <div style="display:none;"><label>Microphone Quality:</label> <var id="microphoneQualityValue">100%</var><br><input id="microphoneQualitySlider" type="range" value="1" min="0.05" max="1" step="0.05"></div>
+        <label>Incoming Mic Volume:</label><var id="microphoneVolumeValue">100%</var><br><input id="microphoneVolumeSlider" type="range" value="1" min="0.00" max="1" step="0.05">
       </section>
       <section id="chatSection" style="display:none;">
         <heading>
-          <div style="text-align:left;"><h3>Chat</h3></div>
-          <div style="text-align:right;"><button id="textToSpeechButton">◌</button><button id="chatPopOutButton">⧉</button></div>
+          <h3>Chat</h3>
+          <div style="flex-grow:1"></div>
+          <button id="textToSpeechButton"><span style="position: relative; top:-3px;">🕫</span></button>
+          <button id="chatPopOutButton"><span style="position: relative; top:4px; font-size: 17px;">⧉</span></button>
         </heading>
         <div id="chatContents"></div>
         <span id="chatBox" role="textbox" contenteditable></span>
@@ -43,3 +52,4 @@
 <script src="peerjs.min.js"></script>
 <script src="script.js"></script>
 <script defer>document.body.className = "" </script>
+</html>

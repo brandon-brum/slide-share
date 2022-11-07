@@ -1,11 +1,15 @@
 let role
-let call
+let videoCall
+let audioCall
+let audioStream
 let peerConn
 let peerID
-let initialConstraints = null
+let initialConstraints = {video:{}, audio:{}}
 
 let logo = document.getElementById("logo")
-let videoElem = document.getElementById("streamvideo")
+let videoElem = document.getElementById("streamVideo")
+let audioElem = document.getElementById("microphoneAudio")
+let audioAmp
 let titleElem = document.getElementsByTagName("title")[0]
 
 let startButton = document.getElementById("startButton")
@@ -31,6 +35,7 @@ function onShareButton() {
   idLabel.innerText = "Your IDentificator is:"
   startButton.innerText = "Select Source"
   logo.style.display = "none"
+  settingsSection.style.display = "block"
   me.on("open", function(id) {
     SetTitle("Host - Waiting for Client...")
     idBox.value = me.id
@@ -42,20 +47,32 @@ function onShareButton() {
     chatSection.style.display = "flex"
     console.log("connected!")
     SetTitle("Host - Connected")
-    console.log("calling " + conn.peer)
-    if (videoElem.srcObject != null) call = me.call(conn.peer, videoElem.srcObject);
+    console.log("videoCalling " + conn.peer)
+    settingsSection.style.display = "block"
+    if (videoElem.srcObject != null) videoCall = me.call(conn.peer, videoElem.srcObject);
+    audioCall = me.call(conn.peer, audioStream);
+
+    audioCall.on("stream", stream => {
+      audioElem.srcObject = stream;
+    })
+
     conn.on('data', function(data) {
       console.log(data)
       if (data.charAt(0) == "!") {
-        switch (data.charAt(1)) {
-          case "Q":
-            changeQuality(parseFloat(data.substring(3)) / 100)
-            qualitySlider.value = parseFloat(data.substring(3)) / 100
-            qualityValue.innerText = Math.round(qualitySlider.value*100) + "%"
-            break
+        switch (data.substring(1,3)) {
+          case "VQ":
+            changeVideoQuality(parseFloat(data.substring(3)) / 100)
+            videoQualitySlider.value = parseFloat(data.substring(3)) / 100
+            videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
+          break
+          case "MQ":
+            changeMicrophoneQuality(parseFloat(data.substring(3)) / 100)
+            microphoneQualitySlider.value = parseFloat(data.substring(3)) / 100
+            microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
+          break
         }
       } else if (data.charAt(0) == "$") {
-        addMessage(data.substring(2), false)
+        showMessage(data.substring(2), false)
       }
     });
     conn.on('error', function(error) {
@@ -71,6 +88,16 @@ function onShareButton() {
     console.error(error)
   });
 
+  navigator.mediaDevices.getUserMedia({audio:true})
+
+    .then(stream => {
+      audioStream = stream
+      if (peerID == undefined) return
+      audioCall = me.call(peerID, audioStream);
+    })
+
+    .catch (err => console.error(err))
+
   startButton.onclick = function() {
     navigator.mediaDevices.getDisplayMedia()
 
@@ -82,19 +109,17 @@ function onShareButton() {
       startButton.innerText = "Change Source"
       nothingPlaying.style.display = "none"
       if (peerID == undefined) return
-      if (call != undefined) {
-        call.close()
-        console.log('Recalling ' + peerID)
+      if (videoCall != undefined) {
+        videoCall.close()
+        console.log('RevideoCalling ' + peerID)
       } else {
-        console.log('calling ' + peerID)
+        console.log('videoCalling ' + peerID)
       }
-      call = me.call(peerID, videoElem.srcObject);
+      videoCall = me.call(peerID, videoElem.srcObject);
 
     })
         
-    .catch (err => {
-        return
-    })
+    .catch (err => console.error(err))
   }
 }
 
@@ -109,28 +134,42 @@ function onWatchButton() {
   me.on('error', function(error) {
     console.error(error)
   });
+
+  navigator.mediaDevices.getUserMedia({audio:true})
+
+  .then(stream => {
+    audioStream = stream
+  })
+
   startButton.onclick = function() {
     if (idBox.value == "") return
     SetTitle("Client - Connecting...")
     let conn = me.connect(idBox.value, {reliable: true})
     peerConn = conn
+    
     conn.on('open', function() {
       console.log("connected!")
       SetTitle("Client - Connected")
       logo.style.display = "none"
       chatSection.style.display = "flex"
       startButton.style.display = "none"
+      settingsSection.style.display = "block"
     })
     conn.on('data', function(data) {
       if (data.charAt(0) == "!") {
-        switch (data.charAt(1)) {
-          case "Q":
-            qualitySlider.value = parseFloat(data.substring(3)) / 100
-            qualityValue.innerText = Math.round(qualitySlider.value*100) + "%"
+        switch (data.substring(1,3)) {
+          case "VQ":
+            videoQualitySlider.value = parseFloat(data.substring(3)) / 100
+            videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
             break
+          case "MQ":
+            changeMicrophoneQuality(parseFloat(data.substring(3)) / 100)
+            microphoneQualitySlider.value = parseFloat(data.substring(3)) / 100
+            microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
+          break
         }
       } else if (data.charAt(0) == "$") {
-        addMessage(data.substring(2), false)
+        showMessage(data.substring(2), false)
       }
     })
     conn.on('error', function(error) {
@@ -143,11 +182,24 @@ function onWatchButton() {
   }
     me.on('call', function(call) {
       console.log('Getting a stream call...')
-      call.answer();
+      call.answer(audioStream);
       call.on('stream', function(stream) {
-        settingsSection.style.display = "block"
-        videoElem.srcObject = stream
-        nothingPlaying.style.display = "none"
+        if (stream.getVideoTracks()[0]) {
+          settingsSection.style.display = "block"
+          nothingPlaying.style.display = "none"
+          if (videoElem.srcObject) {
+            videoElem.srcObject.addTrack(stream.getVideoTracks()[0])
+          } else {
+            videoElem.srcObject = stream;
+          }
+        } else {
+          /*if (videoElem.srcObject) {
+            videoElem.srcObject.addTrack(stream.getAudioTracks()[0])
+          } else {
+            videoElem.srcObject = stream;
+          }*/
+          audioElem.srcObject = stream;
+        }
       });
     });
   roleSection.style.display = "none"
@@ -155,42 +207,75 @@ function onWatchButton() {
   idLabel.innerText = "Your Host's IDentificator is:"
 }
 
+let chatWindow = null;
+
 function SetTitle(text) {
   titleElem.innerText = text
   asideHeading.innerText = text
 
 }
 
-function changeQuality(value) {
-  console.log(value)
+function changeVideoQuality(value) {
   track = videoElem.srcObject.getVideoTracks()[0]
-  initialConstraints = initialConstraints || track.getSettings()
-  let newConstraints = structuredClone(initialConstraints)
-  newConstraints.width = initialConstraints.width * value
-  newConstraints.height = newConstraints.width * (1/initialConstraints.aspectRatio)
+  if (!track) return
+  initialConstraints.video = initialConstraints.video || track.getSettings()
+  let newConstraints = structuredClone(initialConstraints.video)
+  newConstraints.width = initialConstraints.video.width * value
+  newConstraints.height = newConstraints.video.width * (1/initialConstraints.video.aspectRatio)
   videoElem.srcObject.getVideoTracks()[0].applyConstraints(newConstraints)
 }
-let qualitySlider = document.getElementById("qualitySlider")
-let qualityValue = document.getElementById("qualityValue")
 
-qualitySlider.oninput = function() {
-  qualityValue.innerText = Math.round(qualitySlider.value*100) + "%"
+let videoQualitySlider = document.getElementById("videoQualitySlider")
+let videoQualityValue = document.getElementById("videoQualityValue")
+
+videoQualitySlider.oninput = function() {
+  videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
 }
 
-qualitySlider.onchange = function() {
+videoQualitySlider.onchange = function() {
   if (role == "Host") {
-    changeQuality(qualitySlider.value)
+    changeVideoQuality(videoQualitySlider.value)
   } else {
     
   }
-  peerConn.send("!Q:" + Math.round(qualitySlider.value*100))
+  peerConn.send("!VQ:" + Math.round(videoQualitySlider.value*100))
+}
+
+/*function changeMicrophoneQuality(value) {
+  track = videoElem.srcObject.getAudioTracks()[0]
+  if (!track) return
+  initialConstraints.audio = initialConstraints.audio || track.getSettings()
+  let newConstraints = structuredClone(initialConstraints.audio)
+  newConstraints.sampleRate = Math.round(initialConstraints.audio.sampleRate * value)
+  newConstraints.sampleSize = Math.round(initialConstraints.audio.sampleSize * value)
+  videoElem.srcObject.getAudioTracks()[0].applyConstraints(newConstraints)
+}
+
+let microphoneQualitySlider = document.getElementById("microphoneQualitySlider")
+let microphoneQualityValue = document.getElementById("microphoneQualityValue")
+
+microphoneQualitySlider.oninput = function() {
+  microphoneQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
+}
+*/
+
+let microphoneVolumeSlider = document.getElementById("microphoneVolumeSlider")
+let microphoneVolumeValue = document.getElementById("microphoneVolumeValue")
+
+microphoneVolumeSlider.oninput = function() {
+  microphoneVolumeValue.innerText = Math.round(microphoneVolumeSlider.value*100) + "%"
+  audioElem.volume = microphoneVolumeSlider.value
 }
 
 chatBox.onkeypress = function(e) {
   if (e.key == "Enter" && !e.shiftKey) {
-    peerConn.send("$:" + chatBox.innerText)
-    broadcast.postMessage("$:" + chatBox.innerText)
-    addMessage(chatBox.innerText, true)
+    if (chatBox.innerText == "") {
+      e.preventDefault()
+      return
+    }
+    chatBox.innerText = chatBox.innerText.trim()
+    sendMessage(chatBox.innerText)
+    showMessage(chatBox.innerText, true)
     chatBox.innerText = ""
     e.preventDefault()
   } 
@@ -201,35 +286,60 @@ let textToSpeechButton = document.getElementById("textToSpeechButton")
 
 textToSpeechButton.onclick = function() {
   isTextToSpeech = !isTextToSpeech
-  textToSpeechButton.innerText = isTextToSpeech ? "●" : "◌"
+  textToSpeechButton.childNodes[0].innerText = isTextToSpeech ? "🕬" : "🕫"
 }
 
-function addMessage(text, self) {
+let isMuted = false
+let muteButton = document.getElementById("microphoneButton")
+
+muteButton.onclick = function() {
+  if (audioStream) {
+    isMuted = !isMuted
+    audioStream.getAudioTracks()[0].enabled = !isMuted
+    muteButton.childNodes[0].src = "resources/" + (isMuted ? "mutedmicrophone.png" : "microphone.png")
+  }
+  
+}
+
+function showMessage(text, self) {
   let textElem = document.createElement("p")
   let textSpan = document.createElement("span")
   textElem.className = self ? "self" : "peer"
   textSpan.innerText = text
   textElem.append(textSpan)
-  if (chatContents.offsetHeight + chatContents.scrollTop == chatContents.scrollHeight) {
+  if ((chatContents.offsetHeight + chatContents.scrollTop) - chatContents.scrollHeight < 10) {
     chatContents.append(textElem)
     chatContents.scrollBy(0,9999)
   } else {
     chatContents.append(textElem)
   }
-  if (!self) broadcast.postMessage("$:" + chatBox.innerText)
+  if (chatWindow) chatWindow.showMessage(text, self)
   if (!self && isTextToSpeech) speechSynthesis.speak(new SpeechSynthesisUtterance(text)) 
+}
+
+function sendMessage(text) {
+  if (peerConn && text) peerConn.send("$:" + text)
 }
 
 let chatPopOutButton = document.getElementById("chatPopOutButton");
 
 chatPopOutButton.onclick = function() {
-  window.open("chatWindow/chatWindow.html","_blank",
-  `popup location=no width=300 height=9999 scrollbars=no,status=no,location=no,toolbar=no,menubar=no`)
+  chatWindow = window.open("chatWindow/chatWindow.html","chatWindow",
+  `popup location=no width=300 height=9999 scrollbars=no,status=no,location=no,toolbar=no,menubar=no`);
+
+  chatWindow.broadcast = new BroadcastChannel(broadcast.name)
+
+  chatWindow.onclose = function () {
+    chatWindow = null
+  }
 }
 
-let broadcast = new BroadcastChannel("SlideShareChatr8n3a8t2c")
+let broadcast = new BroadcastChannel("SlideShareChat" + new Date().getTime())
 
-broadcast.onmessage = function(e) {
-  if (e.data.charAt(0) == "$") addMessage(e.data.substring(2), true)
+/*broadcast.onmessage = function(e) {
+  if (e.data.charAt(0) == "$") showMessage(e.data.substring(2), true)
+}*/
+
+window.onbeforeunload = function(){
+  if (chatWindow) chatWindow.close()
 }
-
