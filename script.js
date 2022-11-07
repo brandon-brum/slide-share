@@ -188,7 +188,7 @@ qualitySlider.onchange = function() {
 
 chatBox.onkeypress = function(e) {
   if (e.key == "Enter" && !e.shiftKey) {
-    //peerConn.send("$:" + chatBox.innerText)
+    peerConn.send("$:" + chatBox.innerText)
     broadcast.postMessage("$:" + chatBox.innerText)
     addMessage(chatBox.innerText, true)
     chatBox.innerText = ""
