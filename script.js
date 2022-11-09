@@ -59,15 +59,16 @@ function onShareButton() {
     conn.on('data', function(data) {
       console.log(data)
       if (data.charAt(0) == "!") {
+        let dataValue = data.substring(4)
         switch (data.substring(1,3)) {
           case "VQ":
-            changeVideoQuality(parseFloat(data.substring(4)) / 100)
-            videoQualitySlider.value = parseFloat(data.substring(3)) / 100
+            changeVideoQuality(parseFloat(dataValue / 100)
+            videoQualitySlider.value = parseFloat(dataValue / 100)
             videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
           break
           case "MQ":
-            changeMicrophoneQuality(parseFloat(data.substring(4)) / 100)
-            microphoneQualitySlider.value = parseFloat(data.substring(3)) / 100
+            changeMicrophoneQuality(parseFloat(dataValue / 100)
+            microphoneQualitySlider.value = parseFloat(dataValue / 100)
             microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
           break
           case "MM":
@@ -161,20 +162,15 @@ function onWatchButton() {
     })
     conn.on('data', function(data) {
       if (data.charAt(0) == "!") {
-        let dataValue = data.substring(4)
         switch (data.substring(1,3)) {
           case "VQ":
-            changeVideoQuality(parseFloat(dataValue / 100)
-            videoQualitySlider.value = parseFloat(dataValue / 100
+            videoQualitySlider.value = parseFloat(data.substring(3)) / 100)
             videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
-          break
+            break
           case "MQ":
-            changeMicrophoneQuality(parseFloat(dataValue / 100)
-            microphoneQualitySlider.value = parseFloat(dataValue / 100
+            changeMicrophoneQuality(parseFloat(data.substring(3)) / 100)
+            microphoneQualitySlider.value = parseFloat(data.substring(3)) / 100)
             microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
-          break
-          case "MM":
-            SpeechSynthesis.speak(new SpeechSynthesisUtterance("user muted"))
           break
         }
       } else if (data.charAt(0) == "$") {
