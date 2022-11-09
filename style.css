@@ -143,8 +143,9 @@
     button img {width:100%;}
   
     @media (orientation: portrait) {
-      body,HTML { overflow:hidden; }
+      body,HTML { overflow:hidden; margin-bottom: 5px;}
       main { flex-direction: column; height:100vh; }
       video { width: 100vw; height: initial; max-width:100vw;}
       #videoContainer { text-align: center; }
+      
     }
