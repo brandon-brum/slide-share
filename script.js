@@ -61,12 +61,12 @@ function onShareButton() {
       if (data.charAt(0) == "!") {
         switch (data.substring(1,3)) {
           case "VQ":
-            changeVideoQuality(parseFloat(data.substring(3)) / 100)
+            changeVideoQuality(parseFloat(data.substring(4)) / 100)
             videoQualitySlider.value = parseFloat(data.substring(3)) / 100
             videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
           break
           case "MQ":
-            changeMicrophoneQuality(parseFloat(data.substring(3)) / 100)
+            changeMicrophoneQuality(parseFloat(data.substring(4)) / 100)
             microphoneQualitySlider.value = parseFloat(data.substring(3)) / 100
             microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
           break
