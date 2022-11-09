@@ -4,7 +4,7 @@ let audioCall
 let audioStream
 let peerConn
 let peerID
-let initialConstraints = {video:{}, audio:{}}
+let initialConstraints = {audio: {}, video: {}}
 
 let logo = document.getElementById("logo")
 let videoElem = document.getElementById("streamVideo")
@@ -70,6 +70,9 @@ function onShareButton() {
             microphoneQualitySlider.value = parseFloat(data.substring(3)) / 100
             microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
           break
+          case "MM":
+            SpeechSynthesis.speak(new SpeechSynthesisUtterance("user muted"))
+          break
         }
       } else if (data.charAt(0) == "$") {
         showMessage(data.substring(2), false)
@@ -106,6 +109,7 @@ function onShareButton() {
       if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}
       
       videoElem.srcObject = stream
+      initialConstraints.video = stream.getVideoTracks()[0].getSettings()
       startButton.innerText = "Change Source"
       nothingPlaying.style.display = "none"
       if (peerID == undefined) return
@@ -187,17 +191,8 @@ function onWatchButton() {
         if (stream.getVideoTracks()[0]) {
           settingsSection.style.display = "block"
           nothingPlaying.style.display = "none"
-          if (videoElem.srcObject) {
-            videoElem.srcObject.addTrack(stream.getVideoTracks()[0])
-          } else {
-            videoElem.srcObject = stream;
-          }
+          videoElem.srcObject = stream;
         } else {
-          /*if (videoElem.srcObject) {
-            videoElem.srcObject.addTrack(stream.getAudioTracks()[0])
-          } else {
-            videoElem.srcObject = stream;
-          }*/
           audioElem.srcObject = stream;
         }
       });
@@ -218,10 +213,13 @@ function SetTitle(text) {
 function changeVideoQuality(value) {
   track = videoElem.srcObject.getVideoTracks()[0]
   if (!track) return
-  initialConstraints.video = initialConstraints.video || track.getSettings()
+  console.log("value:" + value)
+  console.log("Initial:", initialConstraints)
   let newConstraints = structuredClone(initialConstraints.video)
+  console.log("New:", newConstraints)
   newConstraints.width = initialConstraints.video.width * value
-  newConstraints.height = newConstraints.video.width * (1/initialConstraints.video.aspectRatio)
+  newConstraints.height = newConstraints.width * (1/initialConstraints.video.aspectRatio)
+  console.log("New:", newConstraints)
   videoElem.srcObject.getVideoTracks()[0].applyConstraints(newConstraints)
 }
 
@@ -238,7 +236,7 @@ videoQualitySlider.onchange = function() {
   } else {
     
   }
-  peerConn.send("!VQ:" + Math.round(videoQualitySlider.value*100))
+  if (peerConn) peerConn.send("!VQ:" + Math.round(videoQualitySlider.value*100))
 }
 
 /*function changeMicrophoneQuality(value) {
@@ -297,6 +295,7 @@ muteButton.onclick = function() {
     isMuted = !isMuted
     audioStream.getAudioTracks()[0].enabled = !isMuted
     muteButton.childNodes[0].src = "resources/" + (isMuted ? "mutedmicrophone.png" : "microphone.png")
+    if (peerConn && isMuted) peerConn.send("!MM")
   }
   
 }
