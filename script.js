@@ -100,7 +100,7 @@ function onShareButton() {
     .catch (err => console.error(err))
 
   startButton.onclick = function() {
-    navigator.mediaDevices.getDisplayMedia()
+    navigator.mediaDevices.getDisplayMedia({video:true, audio:true})
 
     .then(stream => {
       settingsSection.style.display = "block"
