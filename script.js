@@ -107,6 +107,7 @@ function onShareButton() {
       if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}
       
       videoElem.srcObject = stream
+      videoElem.muted = true
       initialConstraints.video = stream.getVideoTracks()[0].getSettings()
       startButton.innerText = "Change Source"
       nothingPlaying.style.display = "none"
