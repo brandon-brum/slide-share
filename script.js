@@ -41,6 +41,7 @@ function onShareButton() {
   startButton.innerText = "Select Source"
   logo.style.display = "none"
   settingsSection.style.display = "block"
+  videoElem.volume = 0
   me.on("open", function(id) {
     SetTitle("Host - Waiting for Client...")
     idBox.value = me.id.replace(idPrefix,"")
