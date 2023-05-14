@@ -1,7 +1,6 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, height=device-height,  initial-scale=1.0, user-scalable=no;user-scalable=0;"/>
   <title>
     SlideShare Screen Sharing
   </title>
@@ -15,9 +14,10 @@
     <p id="nothingPlaying"><span class="bigText">🥱</span><br>Nothing is playing right now.</p>
   </div>
   <aside>
+    <button id="hideButton" style="display:none;">▶</button>
     <div style="text-align: center;"><img id="logo" src="logo.svg"></div>
       <h2 id="asideHeading">Welcome to SlideShare!<br>
-        <sup style="font-size: 50%; vertical-align: super;">version 0.61</sup></h2>
+        <sup style="font-size: 50%; vertical-align: super;">version 0.7</sup></h2>
       
       <section id="roleSection">
         <button onclick="onShareButton()">Share</button>
@@ -25,15 +25,17 @@
       </section>
       <section id="idSection" style="display: none;"><label id="idLabel">Your Host's IDentificator is:</label>
         <div style="display:flex; justify-content: center; align-items: center;">
-          <input type="text" id="idBox" style="flex-grow:1"></input><button style="width:initial; display:none;">✀</button><br><br>
+          <input type="text" id="idBox" style="flex-grow:1"></input><button id="copyButton" style="width:40px;height:40px;padding:0;min-width:40px;">
+            <span style="position:relative;top:-1px">✀</span></button><br><br>
         </div><br>
         <div style="text-align: center;"><button id="startButton">Start</button></div>
       </section>
       <section id="settingsSection" style="display: none;">
         <heading><h3>Stream Settings</h3><div style="flex-grow:1"></div><button id="microphoneButton"><img src="resources/microphone.png"></button></heading>
         <label>Video Quality:</label> <var id="videoQualityValue">100%</var><br><input id="videoQualitySlider" type="range" value="1" min="0.05" max="1" step="0.05">
+        <label>Frame Rate:</label> <var id="frameRateValue">30fps</var><br><input id="frameRateSlider" type="range" value="30" min="0" max="60" step="1">
         <div style="display:none;"><label>Microphone Quality:</label> <var id="microphoneQualityValue">100%</var><br><input id="microphoneQualitySlider" type="range" value="1" min="0.05" max="1" step="0.05"></div>
-        <label>Incoming Mic Volume:</label><var id="microphoneVolumeValue">100%</var><br><input id="microphoneVolumeSlider" type="range" value="1" min="0.00" max="1" step="0.05">
+        <label>Incoming Mic Volume:</label> <var id="microphoneVolumeValue">100%</var><br><input id="microphoneVolumeSlider" type="range" value="1" min="0.00" max="1" step="0.05">
       </section>
       <section id="chatSection" style="display:none;">
         <heading>

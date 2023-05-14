@@ -6,6 +6,11 @@ let peerConn
 let peerID
 let initialConstraints = {audio: {}, video: {}}
 
+let idPrefix = "65c7adf7-13ff-45ca-87b5-3f8e3f356b7e-"
+let currentSecond = new Date().getTime() % 86400
+let idSuffix = currentSecond + Math.floor(Math.random()*13599)
+let finalID = idPrefix + idSuffix
+
 let logo = document.getElementById("logo")
 let videoElem = document.getElementById("streamVideo")
 let audioElem = document.getElementById("microphoneAudio")
@@ -26,10 +31,10 @@ let chatContents = document.getElementById("chatContents")
 
 function onShareButton() {
   role = "Host"
-  let me = new Peer()
+  let me = new Peer(finalID)
   console.log('hosting')
   SetTitle("Host - Connecting...")
-  idBox.readonly = true
+  idBox.readOnly = true
   roleSection.style.display = "none"
   idSection.style.display = "block"
   idLabel.innerText = "Your IDentificator is:"
@@ -38,7 +43,7 @@ function onShareButton() {
   settingsSection.style.display = "block"
   me.on("open", function(id) {
     SetTitle("Host - Waiting for Client...")
-    idBox.value = me.id
+    idBox.value = me.id.replace(idPrefix,"")
   })
 
   me.on('connection', function(conn) {
@@ -57,7 +62,7 @@ function onShareButton() {
     })
 
     conn.on('data', function(data) {
-      console.log(data)
+      //console.log("received" + data)
       if (data.charAt(0) == "!") {
         let dataValue = data.substring(4)
         switch (data.substring(1,3)) {
@@ -66,10 +71,10 @@ function onShareButton() {
             videoQualitySlider.value = parseFloat(dataValue / 100)
             videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
           break
-          case "MQ":
-            changeMicrophoneQuality(parseFloat(dataValue / 100))
-            microphoneQualitySlider.value = parseFloat(dataValue / 100)
-            microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
+          case "VF":
+            changeVideoFrameRate(dataValue)
+            frameRateSlider.value = dataValue
+            frameRateValue.innerText = frameRateSlider.value + "fps"
           break
         }
       } else if (data.charAt(0) == "$") {
@@ -107,8 +112,9 @@ function onShareButton() {
       if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}
       
       videoElem.srcObject = stream
-      videoElem.muted = true
       initialConstraints.video = stream.getVideoTracks()[0].getSettings()
+      changeVideoFrameRate(frameRateSlider.value)
+      changeVideoQuality(videoQualitySlider.value)
       startButton.innerText = "Change Source"
       nothingPlaying.style.display = "none"
       if (peerID == undefined) return
@@ -120,7 +126,7 @@ function onShareButton() {
       }
       videoCall = me.call(peerID, videoElem.srcObject);
 
-    })
+    }) 
         
     .catch (err => console.error(err))
   }
@@ -147,7 +153,7 @@ function onWatchButton() {
   startButton.onclick = function() {
     if (idBox.value == "") return
     SetTitle("Client - Connecting...")
-    let conn = me.connect(idBox.value, {reliable: true})
+    let conn = me.connect(idPrefix + idBox.value, {reliable: true})
     peerConn = conn
     
     conn.on('open', function() {
@@ -159,6 +165,7 @@ function onWatchButton() {
       settingsSection.style.display = "block"
     })
     conn.on('data', function(data) {
+      //console.log("received" + data)
       if (data.charAt(0) == "!") {
         let dataValue = data.substring(4)
         switch (data.substring(1,3)) {
@@ -166,10 +173,9 @@ function onWatchButton() {
             videoQualitySlider.value = parseFloat(dataValue / 100)
             videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
           break
-          case "MQ":
-            changeMicrophoneQuality(parseFloat(dataValue / 100))
-            microphoneQualitySlider.value = parseFloat(dataValue / 100)
-            microphoneQualityValue.innerText = Math.round(microphoneQualitySlider.value*100) + "%"
+          case "VF":
+            frameRateSlider.value = dataValue
+            frameRateValue.innerText = frameRateSlider.value + "fps"
           break
         }
       } else if (data.charAt(0) == "$") {
@@ -213,13 +219,9 @@ function SetTitle(text) {
 function changeVideoQuality(value) {
   track = videoElem.srcObject.getVideoTracks()[0]
   if (!track) return
-  console.log("value:" + value)
-  console.log("Initial:", initialConstraints)
   let newConstraints = structuredClone(initialConstraints.video)
-  console.log("New:", newConstraints)
   newConstraints.width = initialConstraints.video.width * value
   newConstraints.height = newConstraints.width * (1/initialConstraints.video.aspectRatio)
-  console.log("New:", newConstraints)
   videoElem.srcObject.getVideoTracks()[0].applyConstraints(newConstraints)
 }
 
@@ -237,6 +239,32 @@ videoQualitySlider.onchange = function() {
     
   }
   if (peerConn) peerConn.send("!VQ:" + Math.round(videoQualitySlider.value*100))
+}
+
+function changeVideoFrameRate(value) {
+  track = videoElem.srcObject.getVideoTracks()[0]
+  if (!track) retur
+  let oldConstraints = videoElem.srcObject.getVideoTracks()[0].getConstraints()
+  let newConstraints = structuredClone(oldConstraints)
+  newConstraints.frameRate = value
+  initialConstraints.video.frameRate = value
+  videoElem.srcObject.getVideoTracks()[0].applyConstraints(newConstraints)
+}
+
+let frameRateSlider = document.getElementById("frameRateSlider")
+let frameRateValue = document.getElementById("frameRateValue")
+
+frameRateSlider.oninput = function() {
+  frameRateValue.innerText = frameRateSlider.value + "fps"
+}
+
+frameRateSlider.onchange = function() {
+  if (role == "Host") {
+    changeVideoFrameRate(frameRateSlider.value)
+  } else {
+    
+  }
+  if (peerConn) peerConn.send("!VF:" + frameRateSlider.value)
 }
 
 /*function changeMicrophoneQuality(value) {
@@ -342,3 +370,7 @@ let broadcast = new BroadcastChannel("SlideShareChat" + new Date().getTime())
 window.onbeforeunload = function(){
   if (chatWindow) chatWindow.close()
 }
+
+let copyButton = document.getElementById("copyButton")
+
+copyButton.onclick = e => navigator.clipboard.writeText(idBox.value)
