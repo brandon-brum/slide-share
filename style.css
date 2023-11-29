@@ -7,7 +7,7 @@
 
     #videoContainer { position:relative; text-align: left;}
 
-    video { height:100vh; max-width:75vw; background: black;}
+    video { height:100vh; max-width:75vw; background: black; filter: none !important}
 
     .fullscreen video { max-width: 100vw !important; }
 
