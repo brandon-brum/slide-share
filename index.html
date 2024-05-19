@@ -1,6 +1,8 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>
     SlideShare Screen Sharing
   </title>
@@ -21,14 +23,14 @@
       
       <section id="roleSection">
         <button onclick="onShareButton()">Share</button>
-        <button onclick="onWatchButton()">Watch</button>
+        <button type="button" onclick="onWatchButton()">Watch</button>
       </section>
       <section id="idSection" style="display: none;"><label id="idLabel">Your Host's IDentificator is:</label>
         <div style="display:flex; justify-content: center; align-items: center;">
           <input type="text" id="idBox" style="flex-grow:1"></input><button id="copyButton" style="width:40px;height:40px;padding:0;min-width:40px;">
             <span style="position:relative;top:-1px">✀</span></button><br><br>
         </div><br>
-        <div style="text-align: center;"><button id="startButton">Start</button></div>
+        <div style="text-align: center;"><button id="startButton" type="button">Start</button></div>
       </section>
       <section id="settingsSection" style="display: none;">
         <heading><h3>Stream Settings</h3><div style="flex-grow:1"></div><button id="microphoneButton"><img src="resources/microphone.png"></button></heading>

@@ -7,8 +7,8 @@ let peerID
 let initialConstraints = {audio: {}, video: {}}
 
 let idPrefix = "65c7adf7-13ff-45ca-87b5-3f8e3f356b7e-"
-let currentSecond = new Date().getTime() % 86400
-let idSuffix = currentSecond + Math.floor(Math.random()*13599)
+let currentSecond = Math.round(new Date().getTime()/1000) % 86400
+let idSuffix = currentSecond + Math.floor(Math.random() * (13599 - 10000) + 10000)
 let finalID = idPrefix + idSuffix
 
 let logo = document.getElementById("logo")
@@ -29,6 +29,21 @@ let chatSection = document.getElementById("chatSection")
 let chatBox = document.getElementById("chatBox")
 let chatContents = document.getElementById("chatContents")
 
+let url = new URL(window.location)
+let room = url.searchParams.get("r")
+
+if (room != null) {
+  if (window.history.state != "host") {
+    console.log("automatically entering room " + room)
+    idBox.value = room
+    onWatchButton()
+  } else {
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+  
+}
+
+
 function onShareButton() {
   role = "Host"
   let me = new Peer(finalID)
@@ -45,6 +60,7 @@ function onShareButton() {
   me.on("open", function(id) {
     SetTitle("Host - Waiting for Client...")
     idBox.value = me.id.replace(idPrefix,"")
+    window.history.replaceState("host", null, "?r=" + idBox.value)
   })
 
   me.on('connection', function(conn) {
@@ -137,19 +153,13 @@ stopAllTracks = () => {if (videoElem.srcObject != undefined) {videoElem.srcObjec
 
 function onWatchButton() {
   role = "Client"
-  let me = new Peer()
+  me = new Peer()
   console.log("joining")
   SetTitle("Client - Enter Host ID")
 
   me.on('error', function(error) {
     console.error(error)
   });
-
-  navigator.mediaDevices.getUserMedia({audio:true})
-
-  .then(stream => {
-    audioStream = stream
-  })
 
   startButton.onclick = function() {
     if (idBox.value == "") return
@@ -207,6 +217,16 @@ function onWatchButton() {
   roleSection.style.display = "none"
   idSection.style.display = "block"
   idLabel.innerText = "Your Host's IDentificator is:"
+
+  navigator.mediaDevices.getUserMedia({audio:true})
+
+  .then(stream => {
+    audioStream = stream
+  })
+
+  if (room != null) {
+    me.on('open', () => {startButton.click()})
+  }
 }
 
 let chatWindow = null;

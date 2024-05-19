@@ -5,9 +5,9 @@
     
     main { display:flex; justify-content: left; width:100vw; }
 
-    #videoContainer { position:relative; text-align: left;}
+    #videoContainer { display: flex; justify-content: center; align-items:center; flex-grow: 1; position:relative; text-align: left; background-color: black;}
 
-    video { height:100vh; max-width:75vw; background: black; filter: none !important}
+    video { height:100vh; max-width:75vw; background: black;}
 
     .fullscreen video { max-width: 100vw !important; }
 
@@ -22,7 +22,7 @@
     }
 
     aside { min-width: 200px; flex-grow:1; height: 100vh; padding: 10px; box-sizing: border-box; background: white;
-            display:flex; flex-direction: column; z-index: 10; position: absolute; right:0; width: 25vw;  }
+            display:flex; flex-direction: column; z-index: 10; right:0; width: 10vw; overflow:scroll; }
 
     .fullscreen aside { right: -100%; transition: width 0.25s, padding 0.25s, right 0.25s; }
 
@@ -157,7 +157,8 @@
       main { flex-direction: column; height:100vh; }
       video { width: 100vw; height: initial; max-width:100vw;}
       #videoContainer { text-align: center; }
-
       aside {  position: static; width: 100%; }
+      #chatSection { min-height: initial; }
+      #chatContents { height: 50vh; font-size: 16px; }
       #hideButton { display: none; }
     }
