@@ -22,7 +22,7 @@
     }
 
     aside { min-width: 200px; flex-grow:1; height: 100vh; padding: 10px; box-sizing: border-box; background: white;
-            display:flex; flex-direction: column; z-index: 10; right:0; width: 10vw; overflow:scroll; }
+            display:flex; flex-direction: column; z-index: 10; right:0; width: 10vw; overflow-y:scroll; }
 
     .fullscreen aside { right: -100%; transition: width 0.25s, padding 0.25s, right 0.25s; }
 
