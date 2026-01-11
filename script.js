@@ -1,13 +1,15 @@
+import { joinRoom } from 'https://esm.run/trystero'
+
 let role
 let videoCall
 let audioCall
 let audioStream
 let peerConn
 let peerID
-let initialConstraints = {audio: {}, video: {}}
+let initialConstraints = { audio: { noiseSuppression: true }, video: {} }
 
 let idPrefix = "65c7adf7-13ff-45ca-87b5-3f8e3f356b7e-"
-let currentSecond = Math.round(new Date().getTime()/1000) % 86400
+let currentSecond = Math.round(new Date().getTime() / 1000) % 86400
 let idSuffix = currentSecond + Math.floor(Math.random() * (13599 - 10000) + 10000)
 let finalID = idPrefix + idSuffix
 
@@ -30,23 +32,30 @@ let chatBox = document.getElementById("chatBox")
 let chatContents = document.getElementById("chatContents")
 
 let url = new URL(window.location)
-let room = url.searchParams.get("r")
+let roomID = url.searchParams.get("r")
+let room
 
-if (room != null) {
+if (roomID != null) {
   if (window.history.state != "host") {
-    console.log("automatically entering room " + room)
-    idBox.value = room
+    console.log("automatically entering room " + roomID)
+    idBox.value = roomID
     onWatchButton()
   } else {
-    window.history.replaceState(null, '', window.location.pathname);
+    window.history.replaceState(null, '', window.location.pathname)
   }
-  
+
 }
+
+document.getElementById("shareButton").onclick = onShareButton
 
 
 function onShareButton() {
   role = "Host"
-  let me = new Peer(finalID)
+  //let me = new Peer(finalID)
+  room = joinRoom({ appId: 'bb_ghio_slideshare-rnatc' }, finalID)
+  let [sendData, getData] = room.makeAction('data')
+  room.sendData = sendData
+  room.getData = getData
   console.log('hosting')
   SetTitle("Host - Connecting...")
   idBox.readOnly = true
@@ -57,117 +66,112 @@ function onShareButton() {
   logo.style.display = "none"
   settingsSection.style.display = "block"
   videoElem.volume = 0
-  me.on("open", function(id) {
-    SetTitle("Host - Waiting for Client...")
-    idBox.value = me.id.replace(idPrefix,"")
-    window.history.replaceState("host", null, "?r=" + idBox.value)
-  })
+  /*me.on("open", function (id) {*/
+  SetTitle("Host - Waiting for Client...")
+  idBox.value = finalID.replace(idPrefix, "")
+  window.history.replaceState("host", null, "?r=" + idBox.value)
+  /*})*/
 
-  me.on('connection', function(conn) {
-    peerConn = conn
-    peerID = conn.peer
+  room.onPeerJoin(peerID => {
     chatSection.style.display = "flex"
     console.log("connected!")
     SetTitle("Host - Connected")
-    console.log("videoCalling " + conn.peer)
+    console.log("videoCalling " + peerID)
     settingsSection.style.display = "block"
-    if (videoElem.srcObject != null) videoCall = me.call(conn.peer, videoElem.srcObject);
-    audioCall = me.call(conn.peer, audioStream);
+    if (videoElem.srcObject != null) videoCall = room.addStream(videoElem.srcObject, null, "screenshare")
+    audioCall = room.addStream(audioStream, null, "microphone")
 
-    audioCall.on("stream", stream => {
-      audioElem.srcObject = stream;
+    room.onPeerStream((stream, peerID, meta) => {
+      if (meta == "microphone")
+        audioElem.srcObject = stream
     })
 
-    conn.on('data', function(data) {
+    room.getData(data => {
       //console.log("received" + data)
       if (data.charAt(0) == "!") {
         let dataValue = data.substring(4)
-        switch (data.substring(1,3)) {
+        switch (data.substring(1, 3)) {
           case "VQ":
             changeVideoQuality(parseFloat(dataValue / 100))
             videoQualitySlider.value = parseFloat(dataValue / 100)
-            videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
-          break
+            videoQualityValue.innerText = Math.round(videoQualitySlider.value * 100) + "%"
+            break
           case "VF":
             changeVideoFrameRate(dataValue)
             frameRateSlider.value = dataValue
             frameRateValue.innerText = frameRateSlider.value + "fps"
-          break
+            break
         }
       } else if (data.charAt(0) == "$") {
         showMessage(data.substring(2), false)
       }
-    });
-    conn.on('error', function(error) {
-      console.error(error)
-    });
+    })
 
-    conn.on('close', function () {
+    room.onPeerLeave(() => {
       SetTitle("Host - Disconnected")
     })
-  });
+  })
 
-  me.on('error', function(error) {
-    console.error(error)
-  });
-
-  navigator.mediaDevices.getUserMedia({audio:true})
+  navigator.mediaDevices.getUserMedia({ audio: true })
 
     .then(stream => {
       audioStream = stream
       if (peerID == undefined) return
-      audioCall = me.call(peerID, audioStream);
+      audioCall = room.addStream(audioStream, null, "microphone")
     })
 
-    .catch (err => console.error(err))
+    .catch(err => console.error(err))
 
-  startButton.onclick = function() {
-    navigator.mediaDevices.getDisplayMedia({video:true, audio:true})
+  startButton.onclick = function () {
+    navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
 
-    .then(stream => {
-      settingsSection.style.display = "block"
-      if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}
-      
-      videoElem.srcObject = stream
-      initialConstraints.video = stream.getVideoTracks()[0].getSettings()
-      changeVideoFrameRate(frameRateSlider.value)
-      changeVideoQuality(videoQualitySlider.value)
-      startButton.innerText = "Change Source"
-      nothingPlaying.style.display = "none"
-      if (peerID == undefined) return
-      if (videoCall != undefined) {
-        videoCall.close()
-        console.log('RevideoCalling ' + peerID)
-      } else {
-        console.log('videoCalling ' + peerID)
-      }
-      videoCall = me.call(peerID, videoElem.srcObject);
+      .then(stream => {
+        settingsSection.style.display = "block"
+        //if (videoElem.srcObject != undefined) { videoElem.srcObject.getTracks().forEach((track) => track.stop()) }
 
-    }) 
-        
-    .catch (err => console.error(err))
+        videoElem.srcObject = stream
+        initialConstraints.video = stream.getVideoTracks()[0].getSettings()
+        changeVideoFrameRate(frameRateSlider.value)
+        changeVideoQuality(videoQualitySlider.value)
+        startButton.innerText = "Change Source"
+        nothingPlaying.style.display = "none"
+        if (peerID == undefined) return
+        if (videoCall != undefined) {
+          room.removeStream(videoCall)
+          console.log('RevideoCalling ' + peerID)
+        } else {
+          console.log('videoCalling ' + peerID)
+        }
+        videoCall = room.addStream(stream, null, "screenshare")
+
+      })
+
+      .catch(err => console.error(err))
   }
 }
 
-stopAllTracks = () => {if (videoElem.srcObject != undefined) {videoElem.srcObject.getTracks().forEach((track) => track.stop())}}
+let stopAllTracks = () => { if (videoElem.srcObject != undefined) { videoElem.srcObject.getTracks().forEach((track) => track.stop()) } }
+
+document.getElementById("watchButton").onclick = onWatchButton
 
 function onWatchButton() {
   role = "Client"
-  me = new Peer()
+  //me = new Peer()
   console.log("joining")
   SetTitle("Client - Enter Host ID")
 
-  me.on('error', function(error) {
-    console.error(error)
-  });
-
-  startButton.onclick = function() {
+  startButton.onclick = function () {
     if (idBox.value == "") return
     SetTitle("Client - Connecting...")
-    let conn = me.connect(idPrefix + idBox.value, {reliable: true})
-    peerConn = conn
-    
-    conn.on('open', function() {
+    //let conn = me.connect(idPrefix + idBox.value, { reliable: true })
+    room = joinRoom({ appId: 'bb_ghio_slideshare-rnatc' }, idPrefix + idBox.value)
+
+    let [sendData, getData] = room.makeAction('data')
+    room.sendData = sendData
+    room.getData = getData
+    //peerConn = conn
+
+    room.onPeerJoin(peerId => {
       console.log("connected!")
       SetTitle("Client - Connected")
       logo.style.display = "none"
@@ -175,61 +179,59 @@ function onWatchButton() {
       startButton.style.display = "none"
       settingsSection.style.display = "block"
     })
-    conn.on('data', function(data) {
+    room.getData(data => {
       //console.log("received" + data)
       if (data.charAt(0) == "!") {
         let dataValue = data.substring(4)
-        switch (data.substring(1,3)) {
+        switch (data.substring(1, 3)) {
           case "VQ":
             videoQualitySlider.value = parseFloat(dataValue / 100)
-            videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
-          break
+            videoQualityValue.innerText = Math.round(videoQualitySlider.value * 100) + "%"
+            break
           case "VF":
             frameRateSlider.value = dataValue
             frameRateValue.innerText = frameRateSlider.value + "fps"
-          break
+            break
         }
       } else if (data.charAt(0) == "$") {
         showMessage(data.substring(2), false)
       }
     })
-    conn.on('error', function(error) {
-      console.log(error)
-    });
 
-    conn.on('close', function() {
+    room.onPeerLeave(() => {
       SetTitle("Client - Disconnected")
     })
-  }
-    me.on('call', function(call) {
+
+    room.onPeerStream((stream, peerID, meta) => {
+      console.log(stream, meta)
       console.log('Getting a stream call...')
-      call.answer(audioStream);
-      call.on('stream', function(stream) {
-        if (stream.getVideoTracks()[0]) {
-          settingsSection.style.display = "block"
-          nothingPlaying.style.display = "none"
-          videoElem.srcObject = stream;
-        } else {
-          audioElem.srcObject = stream;
-        }
-      });
-    });
+      audioCall = room.addStream(audioStream, null, "microphone")
+      if (stream.getVideoTracks().length) {
+        settingsSection.style.display = "block"
+        nothingPlaying.style.display = "none"
+        videoElem.srcObject = stream
+      } else if (stream.getAudioTracks().length) {
+        audioElem.srcObject = stream
+      }
+
+    })
+  }
   roleSection.style.display = "none"
   idSection.style.display = "block"
   idLabel.innerText = "Your Host's IDentificator is:"
 
-  navigator.mediaDevices.getUserMedia({audio:true})
+  navigator.mediaDevices.getUserMedia({ audio: true })
 
-  .then(stream => {
-    audioStream = stream
-  })
+    .then(stream => {
+      audioStream = stream
+    })
 
-  if (room != null) {
-    me.on('open', () => {startButton.click()})
+  if (roomID != null) {
+    startButton.click()
   }
 }
 
-let chatWindow = null;
+let chatWindow = null
 
 function SetTitle(text) {
   titleElem.innerText = text
@@ -238,33 +240,33 @@ function SetTitle(text) {
 }
 
 function changeVideoQuality(value) {
-  track = videoElem.srcObject.getVideoTracks()[0]
+  let track = videoElem.srcObject.getVideoTracks()[0]
   if (!track) return
   let newConstraints = structuredClone(initialConstraints.video)
   newConstraints.width = initialConstraints.video.width * value
-  newConstraints.height = newConstraints.width * (1/initialConstraints.video.aspectRatio)
+  newConstraints.height = newConstraints.width * (1 / initialConstraints.video.aspectRatio)
   videoElem.srcObject.getVideoTracks()[0].applyConstraints(newConstraints)
 }
 
 let videoQualitySlider = document.getElementById("videoQualitySlider")
 let videoQualityValue = document.getElementById("videoQualityValue")
 
-videoQualitySlider.oninput = function() {
-  videoQualityValue.innerText = Math.round(videoQualitySlider.value*100) + "%"
+videoQualitySlider.oninput = function () {
+  videoQualityValue.innerText = Math.round(videoQualitySlider.value * 100) + "%"
 }
 
-videoQualitySlider.onchange = function() {
+videoQualitySlider.onchange = function () {
   if (role == "Host") {
     changeVideoQuality(videoQualitySlider.value)
   } else {
-    
+
   }
-  if (peerConn) peerConn.send("!VQ:" + Math.round(videoQualitySlider.value*100))
+  room.sendData("!VQ:" + Math.round(videoQualitySlider.value * 100))
 }
 
 function changeVideoFrameRate(value) {
-  track = videoElem.srcObject.getVideoTracks()[0]
-  if (!track) retur
+  let track = videoElem.srcObject.getVideoTracks()[0]
+  if (!track) return
   let oldConstraints = videoElem.srcObject.getVideoTracks()[0].getConstraints()
   let newConstraints = structuredClone(oldConstraints)
   newConstraints.frameRate = value
@@ -275,17 +277,17 @@ function changeVideoFrameRate(value) {
 let frameRateSlider = document.getElementById("frameRateSlider")
 let frameRateValue = document.getElementById("frameRateValue")
 
-frameRateSlider.oninput = function() {
+frameRateSlider.oninput = function () {
   frameRateValue.innerText = frameRateSlider.value + "fps"
 }
 
-frameRateSlider.onchange = function() {
+frameRateSlider.onchange = function () {
   if (role == "Host") {
     changeVideoFrameRate(frameRateSlider.value)
   } else {
-    
+
   }
-  if (peerConn) peerConn.send("!VF:" + frameRateSlider.value)
+  room.sendData("!VF:" + frameRateSlider.value)
 }
 
 /*function changeMicrophoneQuality(value) {
@@ -309,12 +311,12 @@ microphoneQualitySlider.oninput = function() {
 let microphoneVolumeSlider = document.getElementById("microphoneVolumeSlider")
 let microphoneVolumeValue = document.getElementById("microphoneVolumeValue")
 
-microphoneVolumeSlider.oninput = function() {
-  microphoneVolumeValue.innerText = Math.round(microphoneVolumeSlider.value*100) + "%"
+microphoneVolumeSlider.oninput = function () {
+  microphoneVolumeValue.innerText = Math.round(microphoneVolumeSlider.value * 100) + "%"
   audioElem.volume = microphoneVolumeSlider.value
 }
 
-chatBox.onkeypress = function(e) {
+chatBox.onkeypress = function (e) {
   if (e.key == "Enter" && !e.shiftKey) {
     if (chatBox.innerText == "") {
       e.preventDefault()
@@ -325,13 +327,13 @@ chatBox.onkeypress = function(e) {
     showMessage(chatBox.innerText, true)
     chatBox.innerText = ""
     e.preventDefault()
-  } 
+  }
 }
 
 let isTextToSpeech = false
 let textToSpeechButton = document.getElementById("textToSpeechButton")
 
-textToSpeechButton.onclick = function() {
+textToSpeechButton.onclick = function () {
   isTextToSpeech = !isTextToSpeech
   textToSpeechButton.childNodes[0].innerText = isTextToSpeech ? "🕬" : "🕫"
 }
@@ -339,14 +341,14 @@ textToSpeechButton.onclick = function() {
 let isMuted = false
 let muteButton = document.getElementById("microphoneButton")
 
-muteButton.onclick = function() {
+muteButton.onclick = function () {
   if (audioStream) {
     isMuted = !isMuted
     audioStream.getAudioTracks()[0].enabled = !isMuted
     muteButton.childNodes[0].src = "resources/" + (isMuted ? "mutedmicrophone.png" : "microphone.png")
-    if (peerConn && isMuted) peerConn.send("!MM")
+    if (isMuted) room.sendData("!MM")
   }
-  
+
 }
 
 function showMessage(text, self) {
@@ -357,23 +359,23 @@ function showMessage(text, self) {
   textElem.append(textSpan)
   if ((chatContents.offsetHeight + chatContents.scrollTop) - chatContents.scrollHeight < 10) {
     chatContents.append(textElem)
-    chatContents.scrollBy(0,9999)
+    chatContents.scrollBy(0, 9999)
   } else {
     chatContents.append(textElem)
   }
   if (chatWindow) chatWindow.showMessage(text, self)
-  if (!self && isTextToSpeech) speechSynthesis.speak(new SpeechSynthesisUtterance(text)) 
+  if (!self && isTextToSpeech) speechSynthesis.speak(new SpeechSynthesisUtterance(text))
 }
 
 function sendMessage(text) {
-  if (peerConn && text) peerConn.send("$:" + text)
+  if (text) room.sendData("$:" + text)
 }
 
-let chatPopOutButton = document.getElementById("chatPopOutButton");
+let chatPopOutButton = document.getElementById("chatPopOutButton")
 
-chatPopOutButton.onclick = function() {
-  chatWindow = window.open("chatWindow/chatWindow.html","chatWindow",
-  `popup location=no width=300 height=9999 scrollbars=no,status=no,location=no,toolbar=no,menubar=no`);
+chatPopOutButton.onclick = function () {
+  chatWindow = window.open("chatWindow/chatWindow.html", "chatWindow",
+    `popup location=no width=300 height=9999 scrollbars=no,status=no,location=no,toolbar=no,menubar=no`)
 
   chatWindow.broadcast = new BroadcastChannel(broadcast.name)
 
@@ -388,14 +390,10 @@ let broadcast = new BroadcastChannel("SlideShareChat" + new Date().getTime())
   if (e.data.charAt(0) == "$") showMessage(e.data.substring(2), true)
 }*/
 
-window.onbeforeunload = function(){
+window.onbeforeunload = function () {
   if (chatWindow) chatWindow.close()
 }
 
 let copyButton = document.getElementById("copyButton")
 
-
 copyButton.onclick = e => navigator.clipboard.writeText(idBox.value)
-
-
-
