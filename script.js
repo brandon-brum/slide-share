@@ -46,7 +46,11 @@ if (room != null) {
 
 function onShareButton() {
   role = "Host"
-  let me = new Peer(finalID)
+  let me = new Peer(finalID, config: {'iceServers': [
+	  { url: 'stun:stun.l.google.com:19302' },
+    { url: 'stun1.l.google.com:19302' },
+    { url: 'turn:turn01.hubl.in?transport=udp' }
+	]})
   console.log('hosting')
   SetTitle("Host - Connecting...")
   idBox.readOnly = true
@@ -393,5 +397,6 @@ window.onbeforeunload = function(){
 }
 
 let copyButton = document.getElementById("copyButton")
+
 
 copyButton.onclick = e => navigator.clipboard.writeText(idBox.value)
